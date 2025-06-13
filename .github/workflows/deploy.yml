@@ -35,6 +35,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
         with:
           registry-type: public
+          aws-region: us-east-1
 
       - name: Build and Push Docker Image
         env:
