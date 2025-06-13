@@ -37,11 +37,14 @@ jobs:
       - name: Build and Push Docker Image
         env:
           AWS_REGION: us-east-1
-          ECR_REPOSITORY: angular-app-repo
+          ECR_REPOSITORY: assignment1-angularjscicd2
         run: |
+
           docker build -t $ECR_REPOSITORY .
-          docker tag $ECR_REPOSITORY:latest ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:latest
-          docker push ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:latest
+          docker tag $ECR_REPOSITORY:latest public.ecr.aws/g0e1b2e8/$ECR_REPOSITORY:latest
+          docker push public.ecr.aws/g0e1b2e8/$ECR_REPOSITORY:latest
+         #docker tag $ECR_REPOSITORY:latest ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:latest
+         #docker push ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:latest      
 
   deploy-to-ec2:
     needs: docker-build-push
@@ -51,11 +54,11 @@ jobs:
         uses: appleboy/ssh-action@v0.1.4
         with:
           host: ${{ secrets.AWS_EC2_HOST }}
-          username: ec2-user
+          username: ubuntu
           key: ${{ secrets.AWS_PRIVATE_KEY }}
           script: |
-            docker pull ${{ steps.login-ecr.outputs.registry }}/angular-app-repo:latest
+            docker pull ${{ steps.login-ecr.outputs.registry }}/assignment1-angularjscicd2:latest
             docker stop angular-app || true
             docker rm angular-app || true
-            docker run -d -p 80:80 --name angular-app ${{ steps.login-ecr.outputs.registry }}/angular-app-repo:latest
+            docker run -d -p 80:80 --name angular-app ${{ steps.login-ecr.outputs.registry }}/assignment1-angularjscicd2:latest
 
