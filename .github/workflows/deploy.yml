@@ -37,17 +37,25 @@ jobs:
           #registry-type: public
          # aws-region: us-east-1
 
-      - name: Build and Push Docker Image
-        env:
-          AWS_REGION: us-east-1
-          ECR_REPOSITORY: assignment1-angularjscicd2
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+        
+      - name: Login to AWS ECR
         run: |
+          aws ecr get-login-password | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_URL }}
 
-          docker build -t $ECR_REPOSITORY .
-          docker tag $ECR_REPOSITORY:latest public.ecr.aws/g0e1b2e8/$ECR_REPOSITORY:latest
-          docker push public.ecr.aws/g0e1b2e8/$ECR_REPOSITORY:latest
-         #docker tag $ECR_REPOSITORY:latest ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:latest
-         #docker push ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:latest      
+      - name: Build, Tag & Push Docker Image
+        run: |
+          docker build -t angular-app .
+          docker tag angular-app:latest ${{ secrets.AWS_ECR_URL }}/angular-app:latest
+          docker push ${{ secrets.AWS_ECR_URL }}/angular-app:latest
+
+      
+     
 
   deploy-to-ec2:
     needs: docker-build-push
@@ -60,8 +68,8 @@ jobs:
           username: ubuntu
           key: ${{ secrets.AWS_PRIVATE_KEY }}
           script: |
-            docker pull ${{ steps.login-ecr.outputs.registry }}/assignment1-angularjscicd2:latest
+            docker pull ${{ steps.login-ecr.outputs.registry }}/angular-app:latest
             docker stop angular-app || true
             docker rm angular-app || true
-            docker run -d -p 80:80 --name angular-app ${{ steps.login-ecr.outputs.registry }}/assignment1-angularjscicd2:latest
+            docker run -d -p 80:80 --name angular-app ${{ steps.login-ecr.outputs.registry }}/angular-app:latest
 
